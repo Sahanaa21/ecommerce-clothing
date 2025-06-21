@@ -1,10 +1,13 @@
 import express from "express";
-import { createCheckoutSession } from "../controllers/paymentController.js";
-import { protect } from "../middleware/authMiddleware.js";
-import { saveOrderAfterPayment } from "../controllers/paymentController.js";
+import { createCheckoutSession, saveOrderAfterPayment } from "../controllers/paymentController.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/create-checkout-session", protect, createCheckoutSession);
+// ✅ Protected: Only logged-in users can initiate payment
+router.post("/create-checkout-session", verifyToken, createCheckoutSession);
+
+// ✅ No auth required to save order after Stripe webhook (Stripe will call this)
 router.post("/save-order", saveOrderAfterPayment);
+
 export default router;
