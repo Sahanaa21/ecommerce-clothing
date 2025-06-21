@@ -1,20 +1,30 @@
 import Product from "../models/Product.js";
 
 // ✅ Create product manually (POST: /api/products)
+// ✅ Create product for Admin (POST: /api/admin/products)
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, category, baseImage, variants } = req.body;
+    const { name, description, category, price, stock, image } = req.body;
 
-    if (!name || !category || !baseImage || !variants || variants.length === 0) {
-      return res.status(400).json({ message: "Missing required fields or variants" });
+    if (!name || !category || !price || !stock || !image) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const newProduct = new Product({
       name,
       description,
       category,
-      baseImage,
-      variants, // expects array of { size, color, type, price, stock, image? }
+      baseImage: image,
+      variants: [
+        {
+          size: "Free Size", // default
+          color: "Standard", // default
+          type: "Default",   // or "T-Shirt"
+          price,
+          stock,
+          image,
+        },
+      ],
     });
 
     await newProduct.save();
@@ -23,6 +33,7 @@ export const createProduct = async (req, res) => {
     res.status(500).json({ message: "Failed to create product", error: error.message });
   }
 };
+
 
 // ✅ Upload product (admin route with baseImage + variants via multipart/form-data)
 export const uploadProduct = async (req, res) => {
