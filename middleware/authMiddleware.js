@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 // ✅ Middleware to verify JWT and attach user to request
-const verifyToken = async (req, res, next) => {
+export const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -28,13 +28,10 @@ const verifyToken = async (req, res, next) => {
 };
 
 // ✅ Admin check middleware
-const verifyAdmin = (req, res, next) => {
+export const isAdmin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
     return res.status(403).json({ message: "Admin access denied" });
   }
 };
-
-export { verifyToken, verifyAdmin };
-export default verifyToken;
