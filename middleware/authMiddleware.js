@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 // ✅ Middleware to verify JWT and attach user to request
-export const protect = async (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -19,7 +19,7 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    req.user = user; // 👈 Attach full user object
+    req.user = user;
     next();
   } catch (err) {
     console.error("🔐 JWT verification error:", err);
@@ -28,10 +28,13 @@ export const protect = async (req, res, next) => {
 };
 
 // ✅ Admin check middleware
-export const isAdmin = (req, res, next) => {
+const verifyAdmin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
     next();
   } else {
     return res.status(403).json({ message: "Admin access denied" });
   }
 };
+
+// ✅ 👇 EXPORTS — no default, only named
+export { verifyToken, verifyAdmin };
