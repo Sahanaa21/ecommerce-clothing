@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
-import verifyToken from "../middleware/authMiddleware.js";
+import {verifyToken }from "../middleware/authMiddleware.js";
 import {
   registerUser,
   loginUser,

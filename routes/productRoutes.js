@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import upload from "../middleware/multerMiddleware.js"; // ✅ Already handles multer setup
-import verifyToken, { verifyAdmin } from "../middleware/authMiddleware.js";
+import {verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
 import {
   createProduct,
