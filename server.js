@@ -7,45 +7,43 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // ✅ Route imports
-import authRoutes from "./routes/authRoutes.js";         // /api/auth/login, /register
-import userRoutes from "./routes/userRoutes.js";         // /api/users/profile, /addresses
-import productRoutes from "./routes/productRoutes.js";   // /api/products
-import orderRoutes from "./routes/orderRoutes.js";       // /api/orders
-import uploadRoutes from "./routes/uploadRoutes.js";     // /api/upload
-import adminRoutes from "./routes/adminRoutes.js";       // /api/admin
+import authRoutes from "./routes/authRoutes.js";         
+import userRoutes from "./routes/userRoutes.js";         
+import productRoutes from "./routes/productRoutes.js";   
+import orderRoutes from "./routes/orderRoutes.js";       
+import uploadRoutes from "./routes/uploadRoutes.js";     
+import adminRoutes from "./routes/adminRoutes.js";       
 import paymentRoutes from "./routes/paymentRoutes.js";
 
-dotenv.config(); // Load .env variables
+dotenv.config();
 
 const app = express();
 
-// ✅ __dirname workaround for ES Modules
+// ✅ __dirname fix for ESModules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ✅ Middlewares
 app.use(cors());
-app.use(express.json()); // Handle JSON body
-app.use(express.urlencoded({ extended: true })); // Handle form submissions
-
-// ✅ Static file serving for uploaded images
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
-// ✅ Mount routes with base paths
-app.use("/api/auth", authRoutes);         // Login, Register
-app.use("/api/users", userRoutes);        // Profile, Address, Wishlist
-app.use("/api/products", productRoutes);  // Products
-app.use("/api/orders", orderRoutes);      // Orders
-app.use("/api/upload", uploadRoutes);     // Product image upload
-app.use("/api/admin", adminRoutes);       // Admin dashboard APIs
+// ✅ API routes
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/upload", uploadRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/payments", paymentRoutes);
 
-// ✅ Base route for sanity check
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.send("🛒 E-Commerce API Running...");
 });
 
-// ✅ Connect to MongoDB & start server
+// ✅ MongoDB connection + start server
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
@@ -53,8 +51,12 @@ mongoose
   })
   .then(() => {
     console.log("✅ MongoDB Connected");
-    app.listen(process.env.PORT || 5000, () =>
-      console.log(`🚀 Server running on port ${process.env.PORT || 5000}`)
-    );
+
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
   })
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+  });
