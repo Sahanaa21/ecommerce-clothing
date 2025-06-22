@@ -1,7 +1,9 @@
-import mongoose from "mongoose";  
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// 📦 Embedded Address Schema
+/* ================================
+   📦 Embedded Address Schema
+================================= */
 const addressSchema = new mongoose.Schema(
   {
     fullName: { type: String, required: true },
@@ -16,7 +18,9 @@ const addressSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 👤 Main User Schema
+/* ================================
+   👤 Main User Schema
+================================= */
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -28,17 +32,30 @@ const userSchema = new mongoose.Schema(
       match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
     },
     password: { type: String, required: true },
-    isAdmin: { type: Boolean, default: false }, // ✅ Admin check
+    isAdmin: { type: Boolean, default: false },
     profileImage: { type: String, default: "" },
     addresses: [addressSchema],
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
   },
-  { timestamps: true } // ✅ Enable automatic createdAt & updatedAt
+  { timestamps: true }
 );
 
-// 🔐 Password check method
+/* ================================
+   🔐 Password Methods
+================================= */
+
+// ✅ Match entered password with hash
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// ✅ Hash password before save if modified
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
 
 export default mongoose.model("User", userSchema);

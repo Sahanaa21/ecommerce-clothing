@@ -1,8 +1,6 @@
 import express from "express";
 import multer from "multer";
-import bcrypt from "bcryptjs";
-import User from "../models/User.js";
-import {verifyToken }from "../middleware/authMiddleware.js";
+import { verifyToken } from "../middleware/authMiddleware.js";
 import {
   registerUser,
   loginUser,
@@ -35,18 +33,8 @@ const upload = multer({ storage });
     🔐 Auth Routes
 =========================== */
 
-// ➕ Register user
-router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
-  try {
-    const hashed = await bcrypt.hash(password, 10);
-    const user = new User({ name, email, password: hashed });
-    await user.save();
-    res.status(201).json({ message: "User registered" });
-  } catch (err) {
-    res.status(500).json({ message: "Registration failed", error: err.message });
-  }
-});
+// ➕ Register user (uses controller)
+router.post("/register", registerUser);
 
 // 🔐 Login
 router.post("/login", loginUser);
@@ -58,7 +46,7 @@ router.post("/login", loginUser);
 // 📄 Get profile
 router.get("/profile", verifyToken, getProfile);
 
-// ✏️ Update profile
+// ✏️ Update profile (with image)
 router.patch("/profile", verifyToken, upload.single("image"), updateProfile);
 
 /* ===========================
@@ -86,29 +74,5 @@ router.get("/wishlist", verifyToken, getWishlist);
 
 // 🔁 Add/Remove product to/from wishlist
 router.post("/wishlist/:productId", verifyToken, toggleWishlist);
-// 🧪 Temporary registration route (for testing)
-router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
-  try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    await user.save();
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) {
-    console.error("❌ Registration failed:", err.message);
-    res.status(500).json({ message: "Registration failed" });
-  }
-});
-
 
 export default router;

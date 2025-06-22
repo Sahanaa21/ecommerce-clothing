@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import Product from "../models/Product.js";
 import jwt from "jsonwebtoken";
 
-/* 🔐 Helper: Generate JWT */
+/* ========== 🔐 Helper: Generate JWT ========== */
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
@@ -12,21 +12,21 @@ export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // Check if user already exists
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
     const newUser = await User.create({ name, email, password });
-
     const token = generateToken(newUser._id);
+
     res.status(201).json({
       token,
       user: {
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        isAdmin: newUser.isAdmin,
       },
     });
   } catch (err) {
@@ -46,13 +46,16 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = generateToken(user._id);
 
     res.status(200).json({
       token,
-      user: { name: user.name, email: user.email },
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
     });
   } catch (err) {
     console.error("🔥 Login error:", err.message);
@@ -65,7 +68,7 @@ export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .select("-password")
-      .populate("wishlist", "name price image");
+      .populate("wishlist", "name price baseImage");
 
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
@@ -103,10 +106,12 @@ export const toggleWishlist = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const alreadyInWishlist = user.wishlist.includes(productId);
+    const exists = user.wishlist.includes(productId);
 
-    if (alreadyInWishlist) {
-      user.wishlist = user.wishlist.filter((id) => id.toString() !== productId);
+    if (exists) {
+      user.wishlist = user.wishlist.filter(
+        (id) => id.toString() !== productId
+      );
       await user.save();
       return res.json({ message: "Removed from wishlist" });
     } else {

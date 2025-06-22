@@ -1,7 +1,6 @@
-// controllers/productController.js
 import Product from "../models/Product.js";
 
-// ✅ Create product (for raw JSON payloads)
+// ✅ Create product (raw JSON)
 export const createProduct = async (req, res) => {
   try {
     const { name, description, category, price, stock, image } = req.body;
@@ -35,39 +34,40 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// ✅ Upload product with image (multipart/form-data)
+// ✅ Upload product with image (from AdminUploadPage)
 export const uploadProduct = async (req, res) => {
   try {
-    const { name, description, category, variants } = req.body;
+    const { name, description, price, stock, category } = req.body;
     const baseImage = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (!name || !category || !baseImage || !variants) {
+    if (!name || !category || !price || !stock || !baseImage) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    let parsedVariants = [];
-    try {
-      parsedVariants = JSON.parse(variants);
-    } catch (err) {
-      return res.status(400).json({ message: "Invalid variants format. Must be valid JSON." });
-    }
+    const variant = {
+      size: "Free Size",
+      color: "Standard",
+      type: "Default",
+      price: Number(price),
+      stock: Number(stock),
+      image: baseImage,
+    };
 
     const newProduct = new Product({
       name,
       description,
       category,
       baseImage,
-      variants: parsedVariants,
+      variants: [variant],
     });
 
     await newProduct.save();
-    res.status(201).json({ message: "Product uploaded with image", product: newProduct });
+    res.status(201).json({ message: "✅ Product uploaded with image", product: newProduct });
   } catch (error) {
-    console.error("Product upload error:", error);
+    console.error("❌ Product upload error:", error);
     res.status(500).json({ message: "Failed to upload product", error: error.message });
   }
 };
-
 
 // ✅ Get all products (with optional filters/sorting)
 export const getAllProducts = async (req, res) => {
@@ -107,7 +107,7 @@ export const getProductById = async (req, res) => {
   }
 };
 
-// ✅ Update product by ID (with image optional)
+// ✅ Update product by ID (with optional image)
 export const updateProduct = async (req, res) => {
   try {
     const { name, description, category, variants } = req.body;
@@ -119,7 +119,7 @@ export const updateProduct = async (req, res) => {
     product.category = category || product.category;
 
     if (variants) {
-      product.variants = JSON.parse(variants); // must be stringified in multipart/form-data
+      product.variants = JSON.parse(variants); // stringified JSON
     }
 
     if (req.file) {
