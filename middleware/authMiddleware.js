@@ -13,7 +13,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.userId).select("-password"); // 🔧 FIXED FIELD
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
@@ -36,5 +36,4 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-// ✅ 👇 EXPORTS — no default, only named
 export { verifyToken, verifyAdmin };

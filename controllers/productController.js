@@ -1,7 +1,7 @@
+// controllers/productController.js
 import Product from "../models/Product.js";
 
-// ✅ Create product manually (POST: /api/products)
-// ✅ Create product for Admin (POST: /api/admin/products)
+// ✅ Create product (for raw JSON payloads)
 export const createProduct = async (req, res) => {
   try {
     const { name, description, category, price, stock, image } = req.body;
@@ -17,9 +17,9 @@ export const createProduct = async (req, res) => {
       baseImage: image,
       variants: [
         {
-          size: "Free Size", // default
-          color: "Standard", // default
-          type: "Default",   // or "T-Shirt"
+          size: "Free Size",
+          color: "Standard",
+          type: "Default",
           price,
           stock,
           image,
@@ -30,12 +30,12 @@ export const createProduct = async (req, res) => {
     await newProduct.save();
     res.status(201).json({ message: "Product created successfully", product: newProduct });
   } catch (error) {
+    console.error("Raw product creation error:", error);
     res.status(500).json({ message: "Failed to create product", error: error.message });
   }
 };
 
-
-// ✅ Upload product (admin route with baseImage + variants via multipart/form-data)
+// ✅ Upload product with image (multipart/form-data)
 export const uploadProduct = async (req, res) => {
   try {
     const { name, description, category, variants } = req.body;
@@ -45,7 +45,12 @@ export const uploadProduct = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const parsedVariants = JSON.parse(variants); // variants comes as JSON string in multipart
+    let parsedVariants = [];
+    try {
+      parsedVariants = JSON.parse(variants);
+    } catch (err) {
+      return res.status(400).json({ message: "Invalid variants format. Must be valid JSON." });
+    }
 
     const newProduct = new Product({
       name,
@@ -62,6 +67,7 @@ export const uploadProduct = async (req, res) => {
     res.status(500).json({ message: "Failed to upload product", error: error.message });
   }
 };
+
 
 // ✅ Get all products (with optional filters/sorting)
 export const getAllProducts = async (req, res) => {

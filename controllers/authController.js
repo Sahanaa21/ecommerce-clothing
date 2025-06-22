@@ -1,28 +1,28 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-// Validation function for strong password
+// ✅ Password strength validation
 const isStrongPassword = (password) => {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
   return regex.test(password);
 };
 
-exports.registerUser = async (req, res) => {
+// ✅ Register User
+export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password)
       return res.status(400).json({ message: "All fields are required" });
 
-    // No numbers allowed in name
     if (/\d/.test(name))
       return res.status(400).json({ message: "Name must not contain numbers" });
 
     if (!isStrongPassword(password)) {
       return res.status(400).json({
         message:
-          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
+          "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
       });
     }
 
@@ -33,25 +33,30 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
+    const user = new User({ name, email, password: hashedPassword });
     await user.save();
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
-    res.status(201).json({ token, user: { name: user.name, email: user.email } });
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
   } catch (err) {
+    console.error("Registration Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
 
-exports.loginUser = async (req, res) => {
+// ✅ Login User
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -67,8 +72,17 @@ exports.loginUser = async (req, res) => {
       expiresIn: "1d",
     });
 
-    res.json({ token, user: { name: user.name, email: user.email } });
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
   } catch (err) {
+    console.error("Login Error:", err);
     res.status(500).json({ message: "Server Error" });
   }
 };
