@@ -10,7 +10,7 @@ const variantSchema = new mongoose.Schema(
     stock: { type: Number, default: 0 },
     image: { type: String, default: "" },         // Optional custom image for variant
   },
-  { _id: false } // prevents automatic _id for subdocs
+  { _id: false }
 );
 
 // 🛍️ Main Product Schema
@@ -32,7 +32,11 @@ const productSchema = new mongoose.Schema(
     },
     baseImage: {
       type: String,
-      required: true, // base preview image
+      required: true,
+    },
+    price: {
+      type: Number,
+      default: 0, // ✅ fallback if no variant selected
     },
     variants: {
       type: [variantSchema],
@@ -44,6 +48,14 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// ✅ Auto-populate `price` before save (optional)
+productSchema.pre("save", function (next) {
+  if (!this.price && this.variants?.length > 0) {
+    this.price = this.variants[0].price;
+  }
+  next();
+});
 
 const Product = mongoose.model("Product", productSchema);
 

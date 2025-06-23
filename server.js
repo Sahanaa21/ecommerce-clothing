@@ -7,12 +7,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // ✅ Route imports
-import authRoutes from "./routes/authRoutes.js";         
-import userRoutes from "./routes/userRoutes.js";         
-import productRoutes from "./routes/productRoutes.js";   
-import orderRoutes from "./routes/orderRoutes.js";       
-import uploadRoutes from "./routes/uploadRoutes.js";     
-import adminRoutes from "./routes/adminRoutes.js";       
+import authRoutes from "./routes/authRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import productRoutes from "./routes/productRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 
 dotenv.config();
@@ -23,12 +23,18 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Middlewares
+// ✅ Core Middlewares
 app.use(cors());
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads')); // Serve static files
 
+// ✅ Stripe webhook route needs raw body (important: BEFORE express.json)
+app.use("/api/payments/save-order", express.raw({ type: "application/json" }));
+
+// ✅ General JSON parser for all other routes
+app.use(express.json());
+
+// ✅ Serve static image files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ API routes
 app.use("/api/auth", authRoutes);

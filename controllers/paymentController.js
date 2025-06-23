@@ -15,11 +15,8 @@ export const createCheckoutSession = async (req, res) => {
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "Cart is empty" });
     }
-
     const lineItems = items.map((item) => {
-  const unitAmount = parseInt(item.price * 100);
-
-  if (isNaN(unitAmount)) {
+  if (!item.price || isNaN(item.price)) {
     throw new Error(`❌ Invalid price for item: ${item.name}`);
   }
 
@@ -29,11 +26,13 @@ export const createCheckoutSession = async (req, res) => {
       product_data: {
         name: item.name,
       },
-      unit_amount: unitAmount, // always a valid integer
+      unit_amount: Math.round(item.price * 100), // convert ₹ to paise
     },
     quantity: item.quantity,
   };
 });
+
+
 
 
     const session = await stripe.checkout.sessions.create({
@@ -59,35 +58,32 @@ export const createCheckoutSession = async (req, res) => {
 
 // ✅ Save Order after Stripe Payment (webhook)
 export const saveOrderAfterPayment = async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+  console.log("🔔 Incoming Stripe Webhook...");
+  console.log("📦 Raw body received:", req.body); // should be a Buffer
+  console.log("📬 Signature:", sig);
+
+  let event;
+
   try {
-    const event = req.body;
-
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const userId = session.metadata.userId;
-      const address = session.metadata.address;
-      const designImage = session.metadata.designImage;
-      const items = JSON.parse(session.metadata.items || "[]");
-
-      const total = session.amount_total / 100;
-
-      const newOrder = new Order({
-        user: userId,
-        items,
-        total,
-        address,
-        designImage,
-        status: "Paid",
-        paymentIntentId: session.payment_intent,
-      });
-
-      await newOrder.save();
-      console.log("✅ Order saved after Stripe payment");
-    }
-
-    res.status(200).json({ received: true });
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
-    console.error("❌ Stripe Webhook Error:", err);
-    res.status(400).send("Webhook Error");
+    console.error("❌ Stripe Signature Verification Failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  // ✅ You’ll reach here only if signature passes
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    console.log("✅ Session Metadata:", session.metadata);
+    return res.status(200).json({ received: true });
+  }
+
+  res.status(200).json({ received: true });
 };
+
+
