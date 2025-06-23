@@ -1,75 +1,93 @@
+// controllers/paymentController.js
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Order from "../models/Order.js";
 
-dotenv.config(); // Load environment variables
+dotenv.config();
 
-// ✅ Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2022-11-15", // Optional but good to specify
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// 🧾 Create Stripe checkout session
+// ✅ Create Stripe Checkout Session
 export const createCheckoutSession = async (req, res) => {
   try {
     const { items, address, designImage } = req.body;
 
-    const line_items = items.map((item) => ({
-      price_data: {
-        currency: "inr",
-        product_data: {
-          name: item.name,
-        },
-        unit_amount: item.price * 100, // Convert to paise
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    const lineItems = items.map((item) => {
+  const unitAmount = parseInt(item.price * 100);
+
+  if (isNaN(unitAmount)) {
+    throw new Error(`❌ Invalid price for item: ${item.name}`);
+  }
+
+  return {
+    price_data: {
+      currency: "inr",
+      product_data: {
+        name: item.name,
       },
-      quantity: item.quantity,
-    }));
+      unit_amount: unitAmount, // always a valid integer
+    },
+    quantity: item.quantity,
+  };
+});
+
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card", "upi"],
-      line_items,
+      payment_method_types: ["card"],
+      line_items: lineItems,
       mode: "payment",
-      success_url: `https://your-frontend-domain.com/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://your-frontend-domain.com/checkout`,
+      success_url: "http://localhost:3000/success", // ✅ replace with live URL on deploy
+      cancel_url: "http://localhost:3000/cancel",
       metadata: {
-        address,
-        designImage,
         userId: req.user._id.toString(),
-        rawOrder: JSON.stringify(items),
+        address,
+        designImage: designImage || "",
+        items: JSON.stringify(items),
       },
     });
 
-    res.json({ id: session.id });
-  } catch (err) {
-    console.error("❌ Stripe error:", err);
-    res.status(500).json({ message: "Failed to create payment session" });
+    res.status(200).json({ id: session.id });
+  } catch (error) {
+    console.error("Stripe Session Error:", error.message);
+    res.status(500).json({ message: "Failed to create checkout session" });
   }
 };
 
-// 🎯 Save order after payment (Webhook-style)
+// ✅ Save Order after Stripe Payment (webhook)
 export const saveOrderAfterPayment = async (req, res) => {
-  const { session_id } = req.body;
-
   try {
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    const items = JSON.parse(session.metadata.rawOrder);
+    const event = req.body;
 
-    const newOrder = new Order({
-      user: session.metadata.userId,
-      items: items.map((item) => ({
-        product: null, // You can link real products later
-        quantity: item.quantity,
-      })),
-      total: session.amount_total / 100,
-      address: session.metadata.address,
-      designImage: session.metadata.designImage || "",
-      status: "Processing",
-    });
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const userId = session.metadata.userId;
+      const address = session.metadata.address;
+      const designImage = session.metadata.designImage;
+      const items = JSON.parse(session.metadata.items || "[]");
 
-    await newOrder.save();
-    res.status(201).json({ message: "✅ Order saved", orderId: newOrder._id });
+      const total = session.amount_total / 100;
+
+      const newOrder = new Order({
+        user: userId,
+        items,
+        total,
+        address,
+        designImage,
+        status: "Paid",
+        paymentIntentId: session.payment_intent,
+      });
+
+      await newOrder.save();
+      console.log("✅ Order saved after Stripe payment");
+    }
+
+    res.status(200).json({ received: true });
   } catch (err) {
-    console.error("❌ Save order error:", err);
-    res.status(500).json({ message: "Failed to save order" });
+    console.error("❌ Stripe Webhook Error:", err);
+    res.status(400).send("Webhook Error");
   }
 };
