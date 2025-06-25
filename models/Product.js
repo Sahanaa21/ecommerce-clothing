@@ -36,7 +36,7 @@ const productSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      default: 0, // ✅ fallback if no variant selected
+      default: Number, // ✅ fallback if no variant selected
     },
     variants: {
       type: [variantSchema],

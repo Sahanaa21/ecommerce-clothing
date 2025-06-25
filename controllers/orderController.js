@@ -1,6 +1,7 @@
+// orderController.js
 import Order from "../models/Order.js";
 
-// ✅ Create a new order
+// ✅ Create Order
 export const createOrder = async (req, res) => {
   try {
     const { items, total, address, designImage } = req.body;
@@ -9,12 +10,16 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Missing order details" });
     }
 
+    const expectedDelivery = new Date();
+    expectedDelivery.setDate(expectedDelivery.getDate() + 5);
+
     const newOrder = new Order({
       user: req.user._id,
       items,
       total,
       address,
-      designImage, // Optional design image
+      designImage,
+      expectedDelivery,
     });
 
     await newOrder.save();
@@ -25,7 +30,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// ✅ Get orders for the logged-in user
+// ✅ Get User Orders
 export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
@@ -39,42 +44,29 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// ✅ Admin: Get all orders
+// ✅ Get All Orders (Admin)
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
-      .populate("user", "name email")
-      .populate("items.product", "name image price")
-      .sort({ createdAt: -1 });
-
+    const orders = await Order.find().populate("user", "name email");
     res.json(orders);
   } catch (err) {
-    console.error("❌ Admin fetch orders failed:", err.message);
-    res.status(500).json({ message: "Failed to load all orders" });
+    res.status(500).json({ message: "Failed to fetch orders" });
   }
 };
 
-// ✅ Admin: Update order status
+// ✅ Update Status (Admin)
 export const updateOrderStatus = async (req, res) => {
   try {
-    const { id } = req.params;
     const { status } = req.body;
+    const order = await Order.findById(req.params.id);
 
-    if (!status) {
-      return res.status(400).json({ message: "Status is required" });
-    }
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-    const order = await Order.findById(id);
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-
-    order.status = status;
+    order.status = status || order.status;
     await order.save();
 
-    res.json({ message: "Order status updated", order });
+    res.json({ message: "✅ Order status updated", order });
   } catch (err) {
-    console.error("❌ Update order status failed:", err.message);
-    res.status(500).json({ message: "Failed to update order status" });
+    res.status(500).json({ message: "❌ Failed to update order", error: err.message });
   }
 };

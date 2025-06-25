@@ -15,11 +15,14 @@ const orderSchema = new mongoose.Schema(
     ],
     total: { type: Number, required: true },
     address: { type: String, required: true },
-    designImage: { type: String }, // ✅ NEW FIELD: Cloudinary design URL
+    designImage: { type: String }, // ✅ Cloudinary design URL (optional)
     status: {
       type: String,
       enum: ["Processing", "Shipped", "Delivered", "Cancelled"],
       default: "Processing",
+    },
+    expectedDelivery: {
+      type: Date, // ✅ NEW FIELD: Expected delivery date
     },
   },
   { timestamps: true }

@@ -2,17 +2,21 @@
 import express from "express";
 import {
   createCheckoutSession,
-  saveOrderAfterPayment
+  handleStripeWebhook,
 } from "../controllers/paymentController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ✅ Initiate Stripe Checkout (requires login)
+// ✅ Step 1: Create Checkout Session (requires login)
 router.post("/create-checkout-session", verifyToken, createCheckoutSession);
 
-// ✅ Stripe Webhook to Save Order (no auth required)
-router.post("/save-order", saveOrderAfterPayment);
-
+// ✅ Step 2: Stripe Webhook to capture completed payments
+// ⚠️ Must be mounted BEFORE express.json in server.js
+router.post(
+  "/webhook/save-order",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook
+);
 
 export default router;

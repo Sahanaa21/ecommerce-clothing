@@ -1,11 +1,25 @@
 import express from "express";
 import multer from "multer";
-import { verifyAdmin, verifyToken } from "../middleware/authMiddleware.js";
-import { getAllUsers } from "../controllers/adminController.js";
+import {
+  verifyToken,
+  verifyAdmin,
+} from "../middleware/authMiddleware.js";
+
+import {
+  getAdminDashboard,
+  getAllUsers,
+  getDailyRevenue,
+  getAllOrders,
+} from "../controllers/adminController.js";
+
 import {
   createProduct,
   uploadProduct,
 } from "../controllers/productController.js";
+
+import {
+  updateOrderStatus,
+} from "../controllers/orderController.js";
 
 const router = express.Router();
 
@@ -26,18 +40,20 @@ const upload = multer({ storage });
    🔐 Admin Routes
 =========================== */
 
-// 📊 Admin Dashboard
-router.get("/dashboard", verifyToken, verifyAdmin, (req, res) => {
-  res.json({ message: "Welcome to the Admin Dashboard" });
-});
+// 📊 Dashboard Stats + Graph Data
+router.get("/dashboard", verifyToken, verifyAdmin, getAdminDashboard);
+router.get("/stats", verifyToken, verifyAdmin, getAdminDashboard);
+router.get("/orders/daily-revenue", verifyToken, verifyAdmin, getDailyRevenue);
 
-// 👥 Get all users
+// 👥 Users
 router.get("/users", verifyToken, verifyAdmin, getAllUsers);
 
-// 🛍️ Create product with raw JSON (e.g. via Postman)
-router.post("/products", verifyToken, verifyAdmin, createProduct);
+// 🛒 Orders
+router.get("/orders", verifyToken, verifyAdmin, getAllOrders);
+router.put("/orders/:id/status", verifyToken, verifyAdmin, updateOrderStatus);
 
-// 🖼️ Upload product with image (from AdminUploadPage form)
+// 🛍️ Products
+router.post("/products", verifyToken, verifyAdmin, createProduct);
 router.post(
   "/upload",
   verifyToken,

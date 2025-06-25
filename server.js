@@ -23,34 +23,36 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ✅ Stripe Webhook route requires raw body - mount BEFORE express.json
+app.use(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  paymentRoutes
+);
+
 // ✅ Core Middlewares
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // normal JSON for other routes
 
-// ✅ Stripe webhook route needs raw body (important: BEFORE express.json)
-app.use("/api/payments/save-order", express.raw({ type: "application/json" }));
-
-// ✅ General JSON parser for all other routes
-app.use(express.json());
-
-// ✅ Serve static image files
+// ✅ Static uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ API routes
+// ✅ Main API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentRoutes); // mounts: /create-checkout-session
 
-// ✅ Health check route
+// ✅ Health Check
 app.get("/", (req, res) => {
   res.send("🛒 E-Commerce API Running...");
 });
 
-// ✅ MongoDB connection + start server
+// ✅ Connect MongoDB + Start Server
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
