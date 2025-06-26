@@ -1,16 +1,16 @@
+// paymentController.js
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import User from "../models/User.js";
-import crypto from "crypto";
 
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// ✅ Create Checkout Session
+// ✅ Create Stripe Checkout Session
 export const createCheckoutSession = async (req, res) => {
   try {
     const { items, address, designImage } = req.body;
@@ -25,7 +25,7 @@ export const createCheckoutSession = async (req, res) => {
         product_data: {
           name: item.name,
         },
-        unit_amount: item.price * 100, // convert ₹ to paisa
+        unit_amount: item.price * 100, // ₹ to paise
       },
       quantity: item.quantity,
     }));
@@ -35,11 +35,11 @@ export const createCheckoutSession = async (req, res) => {
       line_items: lineItems,
       mode: "payment",
       success_url: `${process.env.CLIENT_URL}/success`,
-      cancel_url: `${process.env.CLIENT_URL}/cart`,
+      cancel_url: `${process.env.CLIENT_URL}/checkout`,
       metadata: {
         userId: req.user._id.toString(),
         items: JSON.stringify(items),
-        address: address,
+        address,
         designImage: designImage || "",
       },
     });
@@ -51,8 +51,8 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-// ✅ Webhook Handler - Save Order After Stripe Payment
-export const saveOrderAfterPayment = async (req, res) => {
+// ✅ Stripe Webhook to Save Order After Payment
+export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
 
@@ -63,7 +63,7 @@ export const saveOrderAfterPayment = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Handle payment success
+  // ✅ When payment is successful
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
@@ -73,9 +73,12 @@ export const saveOrderAfterPayment = async (req, res) => {
       const address = session.metadata.address;
       const designImage = session.metadata.designImage;
 
-      const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const total = items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
 
-      const order = new Order({
+      const newOrder = new Order({
         user: userId,
         items: items.map((item) => ({
           product: item._id,
@@ -83,25 +86,20 @@ export const saveOrderAfterPayment = async (req, res) => {
           variant: item.variant || {},
         })),
         total,
-        status: "Processing",
         address,
         designImage,
+        status: "Processing",
       });
 
-      await order.save();
+      await newOrder.save();
 
-      console.log("✅ Order saved successfully after Stripe payment");
+      console.log("✅ Order saved to DB after Stripe payment.");
       res.status(200).end();
-
     } catch (err) {
-      console.error("❌ Failed to save order:", err.message);
+      console.error("❌ Order save failed after Stripe payment:", err.message);
       res.status(500).json({ error: "Failed to save order after payment" });
     }
   } else {
-   res.status(200).end();
-
+    res.status(200).end(); // Accept all other events silently
   }
 };
-
-// ✅ Alias for route handler
-export const handleStripeWebhook = saveOrderAfterPayment;

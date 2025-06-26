@@ -33,7 +33,7 @@ export const createOrder = async (req, res) => {
 // ✅ Get User Orders
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.id })
+    const orders = await Order.find({ user: req.user._id }) // use _id
       .populate("items.product", "name image price")
       .sort({ createdAt: -1 });
 
@@ -43,6 +43,7 @@ export const getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch your orders" });
   }
 };
+
 
 // ✅ Get All Orders (Admin)
 export const getAllOrders = async (req, res) => {
@@ -100,20 +101,17 @@ export const downloadInvoice = async (req, res) => {
       .populate("user", "name email")
       .populate("items.product", "name price");
 
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
     const isOwner = order.user._id.toString() === req.user._id.toString();
     const isAdmin = req.user.isAdmin;
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin)
       return res.status(403).json({ message: "Unauthorized to download this invoice" });
-    }
 
-    generateInvoice(order, res); // 📄 Stream PDF back to browser
+    generateInvoice(order, res);
   } catch (err) {
-    console.error("Invoice error:", err);
+    console.error("❌ Invoice error:", err);
     res.status(500).json({ message: "Failed to generate invoice" });
   }
 };

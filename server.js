@@ -14,38 +14,39 @@ import orderRoutes from "./routes/orderRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import { handleStripeWebhook } from "./controllers/paymentController.js"; // ✅ webhook handler
 
 dotenv.config();
 
 const app = express();
 
-// ✅ __dirname fix for ESModules
+// ✅ Fix __dirname for ESModules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Stripe Webhook route requires raw body - mount BEFORE express.json
-app.use(
-  "/api/payments/webhook",
+// ✅ Stripe Webhook (raw body) - must be before express.json()
+app.post(
+  "/api/webhook",
   express.raw({ type: "application/json" }),
-  paymentRoutes
+  handleStripeWebhook
 );
 
 // ✅ Core Middlewares
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // normal JSON for other routes
+app.use(express.json()); // must come after webhook
 
 // ✅ Static file serving for uploads
 app.use("/api/upload", uploadRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "/uploads"))); // image access
 
 // ✅ Main API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/upload", uploadRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/payments", paymentRoutes); // mounts: /create-checkout-session
+app.use("/api/payments", paymentRoutes); // for /create-checkout-session etc.
 
 // ✅ Health Check
 app.get("/", (req, res) => {

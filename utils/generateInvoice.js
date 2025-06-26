@@ -16,7 +16,9 @@ const generateInvoice = (order, res) => {
   doc.moveDown();
   doc.fontSize(14).text(`Order ID: ${order._id}`);
   doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`);
-  doc.text(`Customer: ${order.user?.name || "Unknown"} (${order.user?.email || "N/A"})`);
+  doc.text(
+    `Customer: ${order.user?.name || "Unknown"} (${order.user?.email || "N/A"})`
+  );
   doc.text(`Shipping Address: ${order.address || "Not provided"}`);
   doc.moveDown();
 
@@ -26,19 +28,24 @@ const generateInvoice = (order, res) => {
 
   order.items.forEach((item, i) => {
     const name = item.product?.name || "Deleted Product";
-    const quantity = item.quantity;
-    const price = item.price ?? "N/A";
+    const quantity = item.quantity || 0;
+    const price = item.product?.price || item.price || 0;
+    const subtotal = price * quantity;
 
-    doc.fontSize(12).text(`${i + 1}. ${name} × ${quantity} - ₹${price}`, { indent: 20 });
+    doc
+      .fontSize(12)
+      .text(`${i + 1}. ${name} × ${quantity} = ₹${subtotal}`, { indent: 20 });
   });
 
   doc.moveDown();
 
   // 💰 Total
-  doc.fontSize(14).text(`Total Amount: ₹${order.total || 0}`, {
-    align: "right",
-    underline: true,
-  });
+  doc
+    .fontSize(14)
+    .text(`Total Amount: ₹${order.total || 0}`, {
+      align: "right",
+      underline: true,
+    });
 
   doc.moveDown(2);
   doc
