@@ -1,14 +1,13 @@
-// paymentController.js
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import Order from "../models/Order.js";
-import Product from "../models/Product.js";
-import User from "../models/User.js";
 
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
 // ✅ Create Stripe Checkout Session
 export const createCheckoutSession = async (req, res) => {
@@ -25,7 +24,7 @@ export const createCheckoutSession = async (req, res) => {
         product_data: {
           name: item.name,
         },
-        unit_amount: item.price * 100, // ₹ to paise
+        unit_amount: item.price * 100, // ₹ to paisa
       },
       quantity: item.quantity,
     }));
@@ -34,8 +33,8 @@ export const createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url: `${process.env.CLIENT_URL}/success`,
-      cancel_url: `${process.env.CLIENT_URL}/checkout`,
+      success_url: `${CLIENT_URL}/success`,
+      cancel_url: `${CLIENT_URL}/checkout`,
       metadata: {
         userId: req.user._id.toString(),
         items: JSON.stringify(items),
@@ -51,7 +50,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-// ✅ Stripe Webhook to Save Order After Payment
+// ✅ Stripe Webhook - Save Order after Payment
 export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
@@ -63,7 +62,7 @@ export const handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ When payment is successful
+  // Only handle successful payment
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
@@ -100,6 +99,7 @@ export const handleStripeWebhook = async (req, res) => {
       res.status(500).json({ error: "Failed to save order after payment" });
     }
   } else {
-    res.status(200).end(); // Accept all other events silently
+    // Accept all other events
+    res.status(200).end();
   }
 };
