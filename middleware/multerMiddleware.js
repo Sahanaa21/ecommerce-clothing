@@ -1,35 +1,51 @@
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
+// ✅ Upload product with image (file) + variants (JSON)
+export const uploadProduct = async (req, res) => {
+  try {
+    const { name, description, category, variants } = req.body;
+    const baseImageFile = req.file;
 
-// Convert ES module URL to __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    if (!name || !category || !description || !variants || !baseImageFile) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-// Set up multer storage engine
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, path.join(__dirname, "../uploads")); // uploads folder
-  },
-  filename(req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${file.fieldname}${ext}`);
-  },
-});
+    // Upload image file to Cloudinary
+    const uploadRes = await cloudinary.uploader.upload(baseImageFile.path, {
+      folder: "ecommerce-products",
+    });
 
-// File filter (optional - image only)
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "image/webp"
-  ) {
-    cb(null, true);
-  } else {
-    cb(new Error("Unsupported file format"), false);
+    const baseImageUrl = uploadRes.secure_url;
+
+    // Parse variants JSON
+    const parsedVariants =
+      typeof variants === "string" ? JSON.parse(variants) : variants;
+
+    if (!Array.isArray(parsedVariants) || parsedVariants.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "At least one variant is required" });
+    }
+
+    const finalVariants = parsedVariants.map((variant) => ({
+      size: variant.size,
+      color: variant.color,
+      type: variant.type || "Default",
+      price: Number(variant.price),
+      stock: Number(variant.stock),
+      image: variant.image || baseImageUrl, // Optional variant-level image
+    }));
+
+    const newProduct = new Product({
+      name,
+      description,
+      category,
+      baseImage: baseImageUrl,
+      variants: finalVariants,
+    });
+
+    await newProduct.save();
+    res.status(201).json({ message: "✅ Product uploaded", product: newProduct });
+  } catch (error) {
+    console.error("❌ Product upload error:", error.message);
+    res.status(500).json({ message: "Failed to upload product", error: error.message });
   }
 };
-
-const upload = multer({ storage, fileFilter });
-
-export default upload;

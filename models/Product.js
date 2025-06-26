@@ -5,10 +5,10 @@ const variantSchema = new mongoose.Schema(
   {
     size: { type: String, required: true },       // e.g., S, M, L, XL
     color: { type: String, required: true },      // e.g., Black, White
-    type: { type: String, required: true },       // e.g., T-shirt, Hoodie
+    type: { type: String, default: "Default" },   // Default for now, customizable later
     price: { type: Number, required: true },
     stock: { type: Number, default: 0 },
-    image: { type: String, default: "" },         // Optional custom image for variant
+    image: { type: String, default: "" },         // Optional variant image (else fallback to baseImage)
   },
   { _id: false }
 );
@@ -32,11 +32,11 @@ const productSchema = new mongoose.Schema(
     },
     baseImage: {
       type: String,
-      required: true,
+      required: true, // URL from Cloudinary
     },
     price: {
       type: Number,
-      default: Number, // ✅ fallback if no variant selected
+      default: 0, // Initial fallback (but auto-filled from variant)
     },
     variants: {
       type: [variantSchema],
@@ -49,7 +49,7 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ Auto-populate `price` before save (optional)
+// ✅ Auto-populate top-level price from first variant if not given
 productSchema.pre("save", function (next) {
   if (!this.price && this.variants?.length > 0) {
     this.price = this.variants[0].price;

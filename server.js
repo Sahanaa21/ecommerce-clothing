@@ -35,8 +35,8 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // normal JSON for other routes
 
-// ✅ Static uploads
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// ✅ Static file serving for uploads
+app.use("/api/upload", uploadRoutes);
 
 // ✅ Main API routes
 app.use("/api/auth", authRoutes);

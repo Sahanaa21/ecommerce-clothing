@@ -1,27 +1,16 @@
-import fs from 'fs';
-import path from 'path';
+ import cloudinary from "../config/cloudinary.js";
 
-// Ensure the /uploads folder exists
-const uploadDir = path.join(path.resolve(), 'uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// ✅ ESM export for use in routes
-export const uploadImage = (req, res) => {
+// ✅ Upload product image to Cloudinary
+export const uploadImage = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded" });
-    }
-
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.status(201).json({
-      message: "✅ Image uploaded successfully",
-      imageUrl,
+    const fileStr = req.body.image; // base64 string
+    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
+      folder: "ecommerce-products",
     });
-  } catch (error) {
-    console.error("Image Upload Error:", error);
-    res.status(500).json({ message: "❌ Error uploading image" });
+
+    res.json({ imageUrl: uploadResponse.secure_url });
+  } catch (err) {
+    console.error("❌ Cloudinary Upload Error:", err);
+    res.status(500).json({ message: "Image upload failed" });
   }
 };

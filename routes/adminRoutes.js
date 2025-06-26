@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import {
   verifyToken,
   verifyAdmin,
@@ -13,8 +12,7 @@ import {
 } from "../controllers/adminController.js";
 
 import {
-  createProduct,
-  uploadProduct,
+  uploadProduct, // ✅ Use only this for product upload via Admin UI
 } from "../controllers/productController.js";
 
 import {
@@ -23,24 +21,11 @@ import {
 
 const router = express.Router();
 
-/* ===========================
-   📸 Multer Config (Admin Uploads)
-=========================== */
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-const upload = multer({ storage });
-
-/* ===========================
+/* ============================
    🔐 Admin Routes
-=========================== */
+============================ */
 
-// 📊 Dashboard Stats + Graph Data
+// 📊 Dashboard Stats
 router.get("/dashboard", verifyToken, verifyAdmin, getAdminDashboard);
 router.get("/stats", verifyToken, verifyAdmin, getAdminDashboard);
 router.get("/orders/daily-revenue", verifyToken, verifyAdmin, getDailyRevenue);
@@ -52,14 +37,7 @@ router.get("/users", verifyToken, verifyAdmin, getAllUsers);
 router.get("/orders", verifyToken, verifyAdmin, getAllOrders);
 router.put("/orders/:id/status", verifyToken, verifyAdmin, updateOrderStatus);
 
-// 🛍️ Products
-router.post("/products", verifyToken, verifyAdmin, createProduct);
-router.post(
-  "/upload",
-  verifyToken,
-  verifyAdmin,
-  upload.single("baseImage"),
-  uploadProduct
-);
+// 🛍️ Admin Product Upload (from AdminUploadPage.js)
+router.post("/products", verifyToken, verifyAdmin, uploadProduct); // ✅ Final route
 
 export default router;
