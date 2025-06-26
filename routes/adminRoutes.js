@@ -18,6 +18,8 @@ import {
 import {
   updateOrderStatus,
 } from "../controllers/orderController.js";
+import { getInvoiceByOrderId } from "../controllers/adminOrderController.js";
+
 
 const router = express.Router();
 
@@ -36,7 +38,7 @@ router.get("/users", verifyToken, verifyAdmin, getAllUsers);
 // 🛒 Orders
 router.get("/orders", verifyToken, verifyAdmin, getAllOrders);
 router.put("/orders/:id/status", verifyToken, verifyAdmin, updateOrderStatus);
-
+router.get("/orders/:id/invoice", verifyToken, verifyAdmin, getInvoiceByOrderId);
 // 🛍️ Admin Product Upload (from AdminUploadPage.js)
 router.post("/products", verifyToken, verifyAdmin, uploadProduct); // ✅ Final route
 
