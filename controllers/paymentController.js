@@ -84,10 +84,11 @@ export const handleStripeWebhook = async (req, res) => {
       const newOrder = new Order({
         user: mongoose.Types.ObjectId(userId),
         items: items.map((item) => ({
-  product: item._id, // ✅ Use as-is if _id is already string
+  product: new mongoose.Types.ObjectId(item._id), // ✅ CORRECT usage
   quantity: item.quantity,
   variant: item.variant || {},
 })),
+
         total,
         address,
         designImage,
