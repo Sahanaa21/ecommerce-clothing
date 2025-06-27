@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
-import axios from "axios";
+import fetch from "node-fetch";
 
 const generateInvoice = async (order, res) => {
   const doc = new PDFDocument({ margin: 50 });
@@ -14,121 +14,113 @@ const generateInvoice = async (order, res) => {
 
   doc.pipe(res);
 
-  // 🖼️ Logo or Brand Fallback
+  // ✅ Add logo or fallback brand name
   const logoPath = path.resolve("public/logo.png");
-  const hasLogo = fs.existsSync(logoPath);
 
-  if (hasLogo) {
+  if (fs.existsSync(logoPath)) {
     doc.image(logoPath, 50, 45, { width: 60 });
+  } else {
+    doc
+      .fontSize(20)
+      .fillColor("blue")
+      .text("Gen Z", 50, 50);
   }
 
+  // 🏪 Store Header
   doc
-    .font("Helvetica-Bold")
-    .fontSize(22)
-    .text("Gen Z", hasLogo ? 120 : 50, 50)
+    .fontSize(20)
+    .text("Custom Threads Store", 120, 50)
     .fontSize(10)
-    .font("Helvetica")
-    .text("www.customthreads.com", hasLogo ? 120 : 50, 72)
+    .text("www.customthreads.com", 120, 70)
     .moveDown();
 
-  // 🧾 Invoice Header
+  // 📋 Invoice Title
   doc
     .fontSize(18)
-    .fillColor("#333")
-    .text("INVOICE", { align: "center", underline: true })
+    .text("🧾 INVOICE", { align: "center", underline: true })
     .moveDown();
 
-  // 📦 Order Summary
-  doc
-    .fontSize(12)
-    .fillColor("black")
-    .text(`Order ID: ${order._id}`)
-    .text(`Order Date: ${new Date(order.createdAt).toLocaleString()}`)
-    .text(`Expected Delivery: ${new Date(order.expectedDelivery).toDateString()}`)
-    .text(`Customer: ${order.user?.name || "Unknown"} (${order.user?.email || "N/A"})`)
-    .text(`Shipping Address: ${order.address || "Not provided"}`)
-    .moveDown();
+  // 🧍 Customer + Order Info
+  doc.fontSize(12);
+  doc.text(`Order ID: ${order._id}`);
+  doc.text(`Order Date: ${new Date(order.createdAt).toLocaleString()}`);
+  doc.text(`Expected Delivery: ${new Date(order.expectedDelivery).toDateString()}`);
+  doc.text(
+    `Customer: ${order.user?.name || "Unknown"} (${order.user?.email || "N/A"})`
+  );
+  doc.text(`Shipping Address: ${order.address || "Not provided"}`);
+  doc.moveDown();
 
-  // 📋 Table Headers
+  // 🛍️ Items Table Header
   doc
-    .font("Helvetica-Bold")
-    .fontSize(12)
+    .fontSize(13)
+    .text("Items", { underline: true })
+    .moveDown(0.3)
+    .fontSize(11)
     .text("Product", 50)
     .text("Size", 200)
     .text("Color", 250)
     .text("Qty", 300)
     .text("Price", 350)
     .text("Subtotal", 420)
-    .moveDown(0.5);
+    .moveDown(0.2);
 
-  // 🛍️ Items Table
+  // ➕ Items List
   order.items.forEach((item) => {
-    const name = item.product?.name || "Deleted Product";
+    const productName = item.product?.name || "Deleted Product";
+    const quantity = item.quantity || 0;
     const price = item.product?.price || item.price || 0;
     const size = item.variant?.size || "N/A";
     const color = item.variant?.color || "N/A";
-    const qty = item.quantity || 1;
-    const subtotal = price * qty;
+    const subtotal = price * quantity;
 
     doc
-      .font("Helvetica")
       .fontSize(11)
-      .text(name, 50)
-      .text(size, 200)
-      .text(color, 250)
-      .text(`${qty}`, 300)
+      .text(`${productName}`, 50)
+      .text(`${size}`, 200)
+      .text(`${color}`, 250)
+      .text(`${quantity}`, 300)
       .text(`₹${price}`, 350)
       .text(`₹${subtotal}`, 420)
       .moveDown(0.3);
   });
 
+  doc.moveDown();
+
   // 💰 Total
   doc
-    .moveDown()
-    .font("Helvetica-Bold")
     .fontSize(13)
     .text(`Total Amount: ₹${order.total || 0}`, {
       align: "right",
       underline: true,
     });
 
-  // 🎨 Design Preview
+  // 👕 Uploaded Design Image (from Cloudinary)
   if (order.designImage && order.designImage.startsWith("http")) {
     doc.addPage();
     doc.fontSize(16).text("🖼️ Uploaded Design", { align: "center" }).moveDown();
 
     try {
-      const { data } = await axios.get(order.designImage, {
-        responseType: "arraybuffer",
-      });
-      const imgBuffer = Buffer.from(data);
-      doc.image(imgBuffer, {
+      const response = await fetch(order.designImage);
+      const buffer = await response.buffer();
+      doc.image(buffer, {
         fit: [400, 400],
         align: "center",
         valign: "center",
       });
     } catch (err) {
-      doc
-        .fontSize(12)
-        .fillColor("red")
-        .text("⚠️ Failed to load uploaded design image from Cloudinary.", {
-          align: "center",
-        });
+      doc.fontSize(12).text("⚠️ Failed to load uploaded design image.");
     }
   }
 
-  // 🧡 Footer Page
+  // ❤️ Footer
   doc
     .addPage()
-    .font("Helvetica")
     .fontSize(12)
-    .fillColor("black")
-    .text("Thank you for choosing Gen Z by Custom Threads!", {
-      align: "center",
-    })
+    .text("Thank you for choosing Custom Threads!", { align: "center" })
     .moveDown()
     .fontSize(10)
-    .text("Need help? Reach out: support@customthreads.com", {
+    .text("For any queries, contact support@customthreads.com", {
       align: "center",
     });
 
