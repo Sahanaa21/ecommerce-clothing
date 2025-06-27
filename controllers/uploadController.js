@@ -1,16 +1,26 @@
- import cloudinary from "../config/cloudinary.js";
+import cloudinary from "../config/cloudinary.js";
+import multer from "multer";
+import fs from "fs";
 
-// ✅ Upload product image to Cloudinary
-export const uploadImage = async (req, res) => {
+// Setup multer for file uploads (temporary local)
+const upload = multer({ dest: "uploads/" });
+
+// ✅ Upload design file to Cloudinary
+export const uploadDesign = async (req, res) => {
   try {
-    const fileStr = req.body.image; // base64 string
-    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
-      folder: "ecommerce-products",
+    const filePath = req.file.path;
+
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "design-uploads",
     });
 
-    res.json({ imageUrl: uploadResponse.secure_url });
+    fs.unlinkSync(filePath); // clean up temp file
+
+    res.json({ url: result.secure_url });
   } catch (err) {
-    console.error("❌ Cloudinary Upload Error:", err);
-    res.status(500).json({ message: "Image upload failed" });
+    console.error("❌ Design Upload Error:", err);
+    res.status(500).json({ message: "Design upload failed" });
   }
 };
+
+export default upload;
