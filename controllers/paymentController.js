@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 
 dotenv.config();
