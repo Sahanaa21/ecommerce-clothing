@@ -33,7 +33,7 @@ export const createCheckoutSession = async (req, res) => {
       payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
-      success_url: `${CLIENT_URL}/success`,
+      success_url: `${CLIENT_URL}/profile?tab=orders`,
       cancel_url: `${CLIENT_URL}/checkout`,
       metadata: {
         userId: req.user._id.toString(),
@@ -62,7 +62,7 @@ export const handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Only handle successful payment
+  // Only handle successful payments
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
@@ -77,16 +77,20 @@ export const handleStripeWebhook = async (req, res) => {
         0
       );
 
+      const expectedDelivery = new Date();
+      expectedDelivery.setDate(expectedDelivery.getDate() + 5);
+
       const newOrder = new Order({
-        user: userId,
+        user: mongoose.Types.ObjectId(userId),
         items: items.map((item) => ({
-          product: item._id,
+          product: mongoose.Types.ObjectId(item._id),
           quantity: item.quantity,
-          variant: item.variant || {},
+          variant: item.variant || {}, // even if unused, safe fallback
         })),
         total,
         address,
         designImage,
+        expectedDelivery,
         status: "Processing",
       });
 
@@ -99,7 +103,6 @@ export const handleStripeWebhook = async (req, res) => {
       res.status(500).json({ error: "Failed to save order after payment" });
     }
   } else {
-    // Accept all other events
-    res.status(200).end();
+    res.status(200).end(); // accept all other events
   }
 };
