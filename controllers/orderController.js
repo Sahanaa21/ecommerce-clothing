@@ -33,8 +33,8 @@ export const createOrder = async (req, res) => {
 // ✅ Get User Orders
 export const getMyOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id }) // use _id
-      .populate("items.product", "name image price")
+    const orders = await Order.find({ user: req.user._id })
+      .populate("items.product", "name image baseImage price")
       .sort({ createdAt: -1 });
 
     res.json(orders);
@@ -43,7 +43,6 @@ export const getMyOrders = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch your orders" });
   }
 };
-
 
 // ✅ Get All Orders (Admin)
 export const getAllOrders = async (req, res) => {
@@ -99,7 +98,7 @@ export const downloadInvoice = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate("user", "name email")
-      .populate("items.product", "name price");
+      .populate("items.product", "name price baseImage");
 
     if (!order) return res.status(404).json({ message: "Order not found" });
 
