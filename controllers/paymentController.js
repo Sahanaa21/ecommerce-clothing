@@ -7,7 +7,6 @@ dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 
 // ✅ Create Stripe Checkout Session
@@ -25,7 +24,7 @@ export const createCheckoutSession = async (req, res) => {
         product_data: {
           name: item.name,
         },
-        unit_amount: item.price * 100, // ₹ to paisa
+        unit_amount: item.price * 100,
       },
       quantity: item.quantity,
     }));
@@ -63,7 +62,6 @@ export const handleStripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // Only handle successful payments
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
 
@@ -82,13 +80,12 @@ export const handleStripeWebhook = async (req, res) => {
       expectedDelivery.setDate(expectedDelivery.getDate() + 5);
 
       const newOrder = new Order({
-        user: mongoose.Types.ObjectId(userId),
+        user: new mongoose.Types.ObjectId(userId),
         items: items.map((item) => ({
-  product: new mongoose.Types.ObjectId(item._id), // ✅ CORRECT usage
-  quantity: item.quantity,
-  variant: item.variant || {},
-})),
-
+          product: new mongoose.Types.ObjectId(item._id),
+          quantity: item.quantity,
+          variant: item.variant || {},
+        })),
         total,
         address,
         designImage,
@@ -105,6 +102,6 @@ export const handleStripeWebhook = async (req, res) => {
       res.status(500).json({ error: "Failed to save order after payment" });
     }
   } else {
-    res.status(200).end(); // accept all other events
+    res.status(200).end();
   }
 };
