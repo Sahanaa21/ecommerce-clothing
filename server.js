@@ -39,6 +39,7 @@ app.use(express.json()); // must come after webhook
 // ✅ Static file serving for uploads
 app.use("/api/upload", uploadRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "/uploads"))); // image access
+app.use("/images", express.static("public/images"));
 
 // ✅ Main API routes
 app.use("/api/auth", authRoutes);
