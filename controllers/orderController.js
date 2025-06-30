@@ -14,16 +14,16 @@ export const createOrder = async (req, res) => {
     const expectedDelivery = new Date();
     expectedDelivery.setDate(expectedDelivery.getDate() + 5);
 
-    // 🔁 Create product snapshot per item
+    // ✅ FIXED: Use correct product ID from item.product
     const populatedItems = await Promise.all(
       items.map(async (item) => {
-        const product = await Product.findById(item._id);
-        if (!product) throw new Error(`Product not found: ${item._id}`);
+        const product = await Product.findById(item.product); // ✅ FIXED (was item._id)
+        if (!product) throw new Error(`Product not found: ${item.product}`);
 
         return {
           product: product._id,
           name: product.name,
-          baseImage: product.baseImage || product.image || "", // fallback if needed
+          baseImage: product.baseImage || product.image || "",
           price: product.price,
           quantity: item.quantity,
           variant: {
