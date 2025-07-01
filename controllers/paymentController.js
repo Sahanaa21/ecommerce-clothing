@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Order from "../models/Order.js";
+import Product from "../models/Product.js"; // ✅ Needed for stock update
 
 dotenv.config();
 
@@ -50,7 +51,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-// ✅ Stripe Webhook - Save Order after Payment
+// ✅ Stripe Webhook - Save Order + Deduct Stock
 export const handleStripeWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
   let event;
@@ -95,11 +96,36 @@ export const handleStripeWebhook = async (req, res) => {
 
       await newOrder.save();
 
-      console.log("✅ Order saved to DB after Stripe payment.");
+      // ✅ Deduct stock from each product
+      for (const item of items) {
+        const product = await Product.findById(item._id);
+        if (!product) continue;
+
+        // ✅ Variant-aware stock deduction (if applicable)
+        if (product.variants && product.variants.length > 0 && item.variant?.size && item.variant?.color) {
+          const variantIndex = product.variants.findIndex(
+            (v) => v.size === item.variant.size && v.color === item.variant.color
+          );
+
+          if (variantIndex >= 0) {
+            product.variants[variantIndex].stock = Math.max(
+              0,
+              product.variants[variantIndex].stock - item.quantity
+            );
+          }
+        } else {
+          // Basic stock (for non-variant products)
+          product.stock = Math.max(0, (product.stock || 0) - item.quantity);
+        }
+
+        await product.save();
+      }
+
+      console.log("✅ Order saved & stock updated.");
       res.status(200).end();
     } catch (err) {
-      console.error("❌ Order save failed after Stripe payment:", err.message);
-      res.status(500).json({ error: "Failed to save order after payment" });
+      console.error("❌ Order save or stock update failed:", err.message);
+      res.status(500).json({ error: "Failed to save order or update stock" });
     }
   } else {
     res.status(200).end();
