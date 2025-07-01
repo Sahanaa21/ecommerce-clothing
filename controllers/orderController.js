@@ -2,7 +2,6 @@ import Order from "../models/Order.js";
 import generateInvoice from "../utils/generateInvoice.js";
 import Product from "../models/Product.js";
 
-// ✅ Create Order
 export const createOrder = async (req, res) => {
   try {
     const { items, address, designImage } = req.body;
@@ -11,6 +10,7 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Missing order details" });
     }
 
+    // Enrich items from database
     const enrichedItems = await Promise.all(
       items.map(async (item) => {
         const product = await Product.findById(item._id);
@@ -18,24 +18,30 @@ export const createOrder = async (req, res) => {
 
         const variant =
           product.variants?.find(
-            (v) => v.size === item.variant?.size && v.color === item.variant?.color
+            (v) =>
+              v.size === item.variant?.size &&
+              v.color === item.variant?.color
           ) || {};
 
         return {
           product: product._id,
           name: product.name,
           quantity: item.quantity,
-          price: variant.price || product.price,
-          baseImage: product.baseImage || product.image,
+          price: variant.price || 0,
+          baseImage: variant.image || product.baseImage || "/images/no-image.jpg",
           variant: {
-            size: variant.size || item.variant?.size,
-            color: variant.color || item.variant?.color,
+            size: variant.size || item.variant?.size || "N/A",
+            color: variant.color || item.variant?.color || "N/A",
           },
         };
       })
     );
 
-    const total = enrichedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Total price
+    const total = enrichedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
 
     const expectedDelivery = new Date();
     expectedDelivery.setDate(expectedDelivery.getDate() + 5);
@@ -50,7 +56,11 @@ export const createOrder = async (req, res) => {
     });
 
     await newOrder.save();
-    res.status(201).json({ message: "Order placed successfully", order: newOrder });
+
+    res.status(201).json({
+      message: "Order placed successfully",
+      order: newOrder,
+    });
   } catch (err) {
     console.error("❌ Order creation error:", err);
     res.status(500).json({ message: "Failed to place order", error: err.message });

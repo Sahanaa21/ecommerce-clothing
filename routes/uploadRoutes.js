@@ -5,10 +5,10 @@ import { verifyToken } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ✅ multer disk storage (temp use before uploading to Cloudinary)
+// ✅ Setup multer for design uploads (temporary local storage)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "uploads/designs/"); // temp folder (make sure this exists or handle missing folder)
+    cb(null, "uploads/"); // Safer and consistent with Cloudinary cleanup
   },
   filename: function (req, file, cb) {
     const ext = file.originalname.split(".").pop();
@@ -18,10 +18,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ✅ Admin image upload via base64
+// ✅ Admin: Upload product image (base64)
 router.post("/product", verifyToken, uploadImage);
 
-router.post("/design", upload.single("design"), uploadDesign);
-
+// ✅ User: Upload design image (file)
+router.post("/design", verifyToken, upload.single("design"), uploadDesign);
 
 export default router;

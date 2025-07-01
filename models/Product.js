@@ -7,7 +7,7 @@ const variantSchema = new mongoose.Schema(
     color: { type: String, required: true },      // e.g., Black, White
     type: { type: String, default: "Default" },   // Default for now, customizable later
     price: { type: Number, required: true },
-    stock: { type: Number, default: 0 },
+    stock: { type: Number, default: 0 , required:true,},
     image: { type: String, default: "" },         // Optional variant image (else fallback to baseImage)
   },
   { _id: false }
