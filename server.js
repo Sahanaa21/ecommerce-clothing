@@ -37,7 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); // must come after webhook
 
 // ✅ Static file serving for uploads
-app.use("/upload", uploadRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "/uploads"))); // image access
 app.use("/images", express.static("public/images"));
 
