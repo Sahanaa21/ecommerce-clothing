@@ -10,36 +10,40 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Missing order details" });
     }
 
-    // Enrich items from database
+    // Enrich items from DB
     const enrichedItems = await Promise.all(
       items.map(async (item) => {
         const product = await Product.findById(item._id);
         if (!product) throw new Error(`Product not found: ${item._id}`);
 
-        const variant =
-          product.variants?.find(
-            (v) =>
-              v.size === item.variant?.size &&
-              v.color === item.variant?.color
-          ) || {};
+        const matchedVariant = product.variants?.find(
+          (v) =>
+            v.size?.toLowerCase() === (item.variant?.size || "").toLowerCase() &&
+            v.color?.toLowerCase() === (item.variant?.color || "").toLowerCase()
+        );
+
+        if (!matchedVariant) {
+          console.warn(`⚠️ Variant not found for product ${product._id}`);
+        }
 
         return {
           product: product._id,
           name: product.name,
           quantity: item.quantity,
-          price: variant.price || 0,
-          baseImage: variant.image || product.baseImage || "/images/no-image.jpg",
+          price: matchedVariant?.price || 0,
+          baseImage:
+            matchedVariant?.image || product.baseImage || "/images/no-image.jpg",
           variant: {
-            size: variant.size || item.variant?.size || "N/A",
-            color: variant.color || item.variant?.color || "N/A",
+            size: matchedVariant?.size || item.variant?.size || "N/A",
+            color: matchedVariant?.color || item.variant?.color || "N/A",
           },
         };
       })
     );
 
-    // Total price
+    // Calculate total price
     const total = enrichedItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + (item.price || 0) * item.quantity,
       0
     );
 
