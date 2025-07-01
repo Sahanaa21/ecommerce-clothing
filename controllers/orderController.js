@@ -1,21 +1,48 @@
 import Order from "../models/Order.js";
 import generateInvoice from "../utils/generateInvoice.js";
+import Product from "../models/Product.js";
 
 // ✅ Create Order
 export const createOrder = async (req, res) => {
   try {
-    const { items, total, address, designImage } = req.body;
+    const { items, address, designImage } = req.body;
 
-    if (!items?.length || !total || !address) {
+    if (!items?.length || !address) {
       return res.status(400).json({ message: "Missing order details" });
     }
+
+    const enrichedItems = await Promise.all(
+      items.map(async (item) => {
+        const product = await Product.findById(item._id);
+        if (!product) throw new Error(`Product not found: ${item._id}`);
+
+        const variant =
+          product.variants?.find(
+            (v) => v.size === item.variant?.size && v.color === item.variant?.color
+          ) || {};
+
+        return {
+          product: product._id,
+          name: product.name,
+          quantity: item.quantity,
+          price: variant.price || product.price,
+          baseImage: product.baseImage || product.image,
+          variant: {
+            size: variant.size || item.variant?.size,
+            color: variant.color || item.variant?.color,
+          },
+        };
+      })
+    );
+
+    const total = enrichedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     const expectedDelivery = new Date();
     expectedDelivery.setDate(expectedDelivery.getDate() + 5);
 
     const newOrder = new Order({
       user: req.user._id,
-      items,
+      items: enrichedItems,
       total,
       address,
       designImage,

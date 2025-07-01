@@ -21,7 +21,7 @@ const upload = multer({ storage });
 // ✅ Admin image upload via base64
 router.post("/product", verifyToken, uploadImage);
 
-// ✅ User design upload via multipart/form-data
-router.post("/design", verifyToken, upload.single("designImage"), uploadDesign);
+router.post("/design", upload.single("design"), uploadDesign);
+
 
 export default router;
