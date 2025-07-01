@@ -2,13 +2,18 @@ import cloudinary from "../config/cloudinary.js";
 import multer from "multer";
 import fs from "fs";
 
-// Setup multer for file uploads (temporary local)
-const upload = multer({ dest: "uploads/" });
+// ✅ Set up multer for handling multipart/form-data uploads (for design uploads)
+const upload = multer({ dest: "uploads/" }); // temp folder
 
-// ✅ Upload product image (used in admin product upload)
+// ✅ Upload product image (admin panel - base64 string)
 export const uploadImage = async (req, res) => {
   try {
-    const fileStr = req.body.image; // base64 string
+    const fileStr = req.body.image; // base64 string from admin panel
+
+    if (!fileStr) {
+      return res.status(400).json({ message: "No image data provided" });
+    }
+
     const uploadResponse = await cloudinary.uploader.upload(fileStr, {
       folder: "ecommerce-products",
     });
@@ -20,7 +25,7 @@ export const uploadImage = async (req, res) => {
   }
 };
 
-// ✅ Upload design image (used in user checkout)
+// ✅ Upload design image (checkout design upload)
 export const uploadDesign = async (req, res) => {
   try {
     if (!req.file) {
@@ -31,10 +36,14 @@ export const uploadDesign = async (req, res) => {
       folder: "ecommerce-designs",
     });
 
-    res.status(200).json({ designImageUrl: result.secure_url });
+    // Optional: remove temp file after upload
+    fs.unlinkSync(req.file.path);
+
+    res.status(200).json({ url: result.secure_url }); // matches frontend expectation: setDesignURL(res.data.url)
   } catch (err) {
     console.error("❌ Design upload error:", err);
     res.status(500).json({ message: "Design upload failed" });
   }
 };
+
 export default upload;
