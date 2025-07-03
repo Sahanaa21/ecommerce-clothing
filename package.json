@@ -12,12 +12,9 @@
 =======
   "name": "backend",
   "version": "1.0.0",
-  "type": "module",
   "main": "server.js",
   "scripts": {
-    "prepare": "bash prepare.sh",
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "axios": "^1.10.0",
@@ -32,7 +29,13 @@
     "multer-storage-cloudinary": "^4.0.0",
     "node-fetch": "^3.3.2",
     "pdfkit": "^0.17.1",
-    "stripe": "^18.2.1"
+    "stripe": "^18.2.1",
+    "jwt-decode": "^4.0.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.10"
   }
 >>>>>>> 5815796e1c7bf7f53343b4f7aace1b307d9234a0
 }
