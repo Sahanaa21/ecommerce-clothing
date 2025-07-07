@@ -14,7 +14,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import { handleStripeWebhook } from "./controllers/paymentController.js"; // ✅ webhook handler
+import { handleStripeWebhook } from "./controllers/paymentController.js";
 
 dotenv.config();
 
@@ -24,37 +24,52 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Stripe Webhook (raw body) - must be before express.json()
+// ✅ CORS config to allow Vercel frontend
+const allowedOrigins = ["https://ecommerce-clothing-omega.vercel.app"];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
+// ✅ Stripe Webhook (must come before express.json())
 app.post(
   "/api/webhook",
   express.raw({ type: "application/json" }),
   handleStripeWebhook
 );
 
-// ✅ Core Middlewares
-app.use(cors());
+// ✅ Body parser
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json()); // must come after webhook
+app.use(express.json());
 
-// ✅ Static file serving for uploads
+// ✅ Static file serving
 app.use("/api/upload", uploadRoutes);
-app.use("/uploads", express.static(path.join(__dirname, "/uploads"))); // image access
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 app.use("/images", express.static("public/images"));
 
-// ✅ Main API routes
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/payments", paymentRoutes); // for /create-checkout-session etc.
+app.use("/api/payments", paymentRoutes);
 
-// ✅ Health Check
+// ✅ Health check
 app.get("/", (req, res) => {
   res.send("🛒 E-Commerce API Running...");
 });
 
-// ✅ Connect MongoDB + Start Server
+// ✅ MongoDB + start
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
