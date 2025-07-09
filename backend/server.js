@@ -25,7 +25,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ✅ CORS config to allow Vercel frontend
-const allowedOrigins = ["https://ecommerce-clothing-omega.vercel.app"];
+const allowedOrigins = [
+  "https://ecommerce-clothing-abtrdl70g-sahanas-projects-1fada166.vercel.app",
+  "https://ecommerce-clothing-omega.vercel.app"
+];
 
 app.use(
   cors({
