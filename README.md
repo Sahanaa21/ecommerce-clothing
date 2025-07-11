@@ -1,9 +1,9 @@
 
-# 🛍️ E-Commerce Clothing Store (MERN Stack)
+#  E-Commerce Clothing Store (MERN Stack)
 
 A full-featured clothing e-commerce web application built using the MERN stack (MongoDB, Express.js, React, Node.js). This app supports product browsing, cart, checkout, user authentication, admin management, payments via Stripe, and more!
 
-## 🚀 Live Demo
+##  Live Demo
 
 - **Frontend (Vercel)**: [https://ecommerce-clothing.vercel.app](https://ecommerce-clothing.vercel.app)
 - **Backend (Render)**: [https://ecommerce-clothing.onrender.com](https://ecommerce-clothing.onrender.com)
@@ -33,7 +33,7 @@ ecommerce-clothing/
 
 ---
 
-## 🧰 Tech Stack
+##  Tech Stack
 
 - **Frontend**: React.js, Axios, React Router, Context API
 - **Backend**: Node.js, Express.js, Mongoose
@@ -45,7 +45,7 @@ ecommerce-clothing/
 
 ---
 
-## 🛠️ Getting Started (Local Development)
+##  Getting Started (Local Development)
 
 ### 1. Clone the Repository
 
@@ -63,7 +63,7 @@ cd backend
 npm install
 ```
 
-#### 🔐 Create `.env` file inside `backend/`
+####  Create `.env` file inside `backend/`
 
 ```env
 PORT=5000
@@ -85,7 +85,7 @@ cd ../frontend
 npm install
 ```
 
-#### 🌐 Create `.env` file inside `frontend/`
+####  Create `.env` file inside `frontend/`
 
 ```env
 REACT_APP_API_BASE_URL=http://localhost:5000/api
@@ -98,7 +98,7 @@ REACT_APP_API_BASE_URL=http://localhost:5000/api
 - Start backend:
   ```bash
   cd backend
-  npm run dev
+  npm start
   ```
 
 - Start frontend (in a new terminal):
@@ -111,9 +111,9 @@ REACT_APP_API_BASE_URL=http://localhost:5000/api
 
 ---
 
-## ⚙️ Features
+##  Features
 
-### 👤 User
+###  User
 
 - Register/Login with JWT
 - Browse products
@@ -121,7 +121,7 @@ REACT_APP_API_BASE_URL=http://localhost:5000/api
 - Place orders (Stripe)
 - View order history
 
-### 🛍️ Admin
+###  Admin
 
 - Add/Edit/Delete products
 - View all orders
@@ -129,7 +129,7 @@ REACT_APP_API_BASE_URL=http://localhost:5000/api
 
 ---
 
-## 🖼️ Image Upload
+##  Image Upload
 
 You can either:
 - Use **Cloudinary** for image uploads (recommended), or  
@@ -139,14 +139,14 @@ Ensure the `uploads` folder is created and accessible if using local storage.
 
 ---
 
-## 🚚 Deployment Instructions
+##  Deployment Instructions
 
 ### Backend on Render
 
 - Set environment variables in Render Dashboard
 - Root directory: `backend`
 - Build command: `npm install`
-- Start command: `node server.js`
+- Start command: `npm start`
 
 ### Frontend on Vercel
 
@@ -159,26 +159,26 @@ Ensure the `uploads` folder is created and accessible if using local storage.
 
 ---
 
-## 🧪 Sample Test Accounts
+##  Sample Test Accounts
 
 ```
 User:
-  Email: testuser@example.com
-  Password: 123456
+  Email: arun@gmail.com
+  Password: #Arun@123
 
 Admin:
-  Email: admin@example.com
-  Password: admin123
+  Email: admin@gmail.com
+  Password: #Admin@123
 ```
 
 ---
 
-## 🙌 Credits
+##  Credits
 
-Made with ❤️ by [@Sahanaa21](https://github.com/Sahanaa21)
+Made by [@Sahanaa21](https://github.com/Sahanaa21)
 
 ---
 
-## 📜 License
+##  License
 
 This project is licensed under the MIT License.
